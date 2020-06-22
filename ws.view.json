@@ -12,8 +12,8 @@
   "modules": [
     {
       "url": "modules/types/science/spectra/spectra_displayer/",
-      "id": 6,
-      "title": "spectra displayer",
+      "id": 1,
+      "title": "scatter plot (use Alt + Draw to select points with lasso tool)",
       "configuration": {
         "sections": {
           "graph": [
@@ -79,7 +79,7 @@
                       ]
                     ],
                     "label": [
-                      "intensity"
+                      ""
                     ],
                     "beforeSpacing": [
                       "0"
@@ -109,7 +109,7 @@
                       ]
                     ],
                     "label": [
-                      "time"
+                      ""
                     ],
                     "beforeSpacing": [
                       "0"
@@ -204,17 +204,17 @@
         "Default layer": {
           "zIndex": 0,
           "display": true,
-          "title": "spectra displayer",
+          "title": "scatter plot (use Alt + Draw to select points with lasso tool)",
           "wrapper": true,
           "created": true,
           "name": "Default layer",
           "position": {
-            "left": 1,
-            "top": 7
+            "left": 0,
+            "top": 2
           },
           "size": {
-            "width": 68,
-            "height": 66
+            "width": 79,
+            "height": 70
           },
           "bgColor": [
             255,
@@ -289,7 +289,7 @@
     },
     {
       "url": "modules/types/client_interaction/code_executor/",
-      "id": 10,
+      "id": 2,
       "title": "",
       "configuration": {
         "sections": {},
@@ -303,7 +303,9 @@
                 ]
               ],
               "execOnLoad": [
-                []
+                [
+                  "yes"
+                ]
               ],
               "asyncAwait": [
                 [
@@ -311,7 +313,7 @@
                 ]
               ],
               "script": [
-                "\nlet socket = new WebSocket(\"ws://127.0.0.1:8888/\");\n\nsocket.onopen = function(e) {\n  socket.send(JSON.stringify({a : 2}));\n};\n\nsocket.onmessage = function(event) {\n    API.doAction(\"FromR\", event);\n};\n\nAPI.cache('socket', socket);\nconsole.log(socket);\n"
+                "if (this.action) {\n  let message = this.action;\n  console.log(message.name);\n  switch (message.name) {\n    case 'FromR':\n      if (message.value.data === 'r got your message') {\n        console.log(message.value.data);\n      } else {\n        let data = JSON.parse(message.value.data);\n        switch (data.name) {\n          case 'ID':\n            API.cache('ID', data.value);\n            console.log('ID received');\n            break;\n          case 'group':\n            API.cache('group', data.value);\n            console.log('group received');\n            break;\n          case 'color':\n            API.createData('color', data.value);\n            console.log('color received');\n            break;\n          case 'scores':\n            API.cache('data', data);\n            drawChart(data);\n            console.log('chart drawn');\n            break;\n          default:\n            break;\n        }\n      }\n      break;\n    case 'updateLabels':\n      break;\n    default:\n      break;\n  }\n} else if (this.variable) {\n  switch (this.variable) {\n    case 'selectedScores':\n        let selectedScores = API.getData('selectedScores').resurrect();\n        let ID = API.cache('ID');\n        let group = API.cache('group');\n        let selectedIDs = [];\n        selectedScores.forEach(x => selectedIDs.push({'ID': ID[x], 'Group': group[x]}));\n        API.createData('selectedIDs', selectedIDs);\n        let socket = API.cache('socket');\n        socket.send(JSON.stringify(selectedScores));\n        console.log(selectedScores);\n        break;\n    case 'color':\n        let data = API.cache('data');\n        let color = API.getData('color');\n        let options = {'color': color};\n        drawChart(data, options);\n    default:\n      break;\n  }\n} else {\n  let socket = new WebSocket('ws://127.0.0.1:8888/');\n  socket.onopen = function (e) {\n    socket.send(JSON.stringify({ message: 'hlv is connected' }));\n  };\n  socket.onmessage = function (event) {\n    API.doAction('FromR', event);\n  };\n  API.cache('socket', socket);\n  console.log(socket);\n}\n\nfunction drawChart(data, options = {}) {\n  const {\n      color = []\n  } = options\n  let unselected = data.x.map((x) => {\n    return {\n      fill: 'transparent',\n      shape: 'circle',\n      cx: 0,\n      cy: 0,\n      r: 3,\n      height: '5px',\n      width: '5px',\n      stroke: 'red',\n    };\n  });\n  let selected = data.x.map((x) => {\n    return {\n      fill: 'black',\n      shape: 'circle',\n      cx: 0,\n      cy: 0,\n      r: 4,\n      height: '5px',\n      width: '5px',\n      stroke: 'red',\n    };\n  });\n  let score = {\n    title: 'score plot',\n    axes: {\n      x: {\n        label: data.xLabel,\n      },\n      y: {\n        label: data.yLabel,\n      },\n    },\n    data: [\n      {\n        type: 'scatter',\n        info: data.x.map((x, i) => i),\n        x: data.x,\n        y: data.y,\n        styles: {\n          unselected: unselected,\n          selected: selected,\n        },\n      },\n    ],\n  };\n  if (color.length > 0){\n      console.log('hay color');\n      console.log(color);\n  }\n  console.log(score);\n  API.createData('scores', score);\n}\n"
               ]
             }
           ],
@@ -341,12 +343,12 @@
           "created": true,
           "name": "Default layer",
           "position": {
-            "left": 89,
-            "top": 8
+            "left": 79,
+            "top": 77
           },
           "size": {
-            "width": 44,
-            "height": 24
+            "width": 57,
+            "height": 85
           },
           "bgColor": [
             255,
@@ -357,135 +359,23 @@
         }
       },
       "vars_in": [
-        {}
-      ],
-      "actions_in": [
-        {}
-      ],
-      "vars_out": [
         {
-          "jpath": []
-        }
-      ],
-      "actions_out": [
+          "rel": "inputValue",
+          "name": "selectedScores"
+        },
         {
-          "jpath": []
+          "rel": "inputValue",
+          "name": "color"
         }
-      ],
-      "toolbar": {
-        "custom": [
-          [
-            {
-              "title": "",
-              "icon": "",
-              "action": "",
-              "position": "begin",
-              "color": [
-                100,
-                100,
-                100,
-                1
-              ]
-            }
-          ]
-        ],
-        "common": [
-          {
-            "toolbar": [
-              [
-                "Open Preferences"
-              ]
-            ]
-          }
-        ]
-      },
-      "css": [
-        {
-          "fontSize": [
-            ""
-          ],
-          "fontFamily": [
-            ""
-          ]
-        }
-      ]
-    },
-    {
-      "url": "modules/types/client_interaction/code_executor/",
-      "id": 11,
-      "title": "",
-      "configuration": {
-        "sections": {},
-        "groups": {
-          "group": [
-            {
-              "display": [
-                [
-                  "editor",
-                  "buttons"
-                ]
-              ],
-              "execOnLoad": [
-                []
-              ],
-              "asyncAwait": [
-                [
-                  "top"
-                ]
-              ],
-              "script": [
-                "\nlet message = this.action;\nconsole.log('mess: ' + message.value.data)"
-              ]
-            }
-          ],
-          "libs": [
-            [
-              {}
-            ]
-          ],
-          "buttons": [
-            [
-              {
-                "name": "button1",
-                "label": "Execute",
-                "hide": [],
-                "disable": []
-              }
-            ]
-          ]
-        }
-      },
-      "layers": {
-        "Default layer": {
-          "zIndex": 0,
-          "display": true,
-          "title": "",
-          "wrapper": true,
-          "created": true,
-          "name": "Default layer",
-          "position": {
-            "left": 22,
-            "top": 80
-          },
-          "size": {
-            "width": 41,
-            "height": 12
-          },
-          "bgColor": [
-            255,
-            255,
-            255,
-            0
-          ]
-        }
-      },
-      "vars_in": [
-        {}
       ],
       "actions_in": [
         {
           "rel": "execute",
           "name": "FromR"
+        },
+        {
+          "rel": "execute",
+          "name": "updateLabels"
         }
       ],
       "vars_out": [
@@ -558,7 +448,7 @@
                 ]
               ],
               "script": [
-                "let score = ({\"title\": \"score plot\",\n    \"data\": [{\n        \"type\": \"scatter\",\n        \"info\":[1,2,3,4,5],\n        \"x\":[1, 2, 3, 4, 6],\n        \"y\":[2, 3, 6, 3, 5],\n        \"styles\": {\n            \"unselected\": [\n                {\"fill\": \"transparent\",\n                \"shape\": \"circle\",\n                \"cx\": 0,\n                \"cy\": 0,\n                \"r\": 15,\n                \"height\": \"5px\",\n                \"width\": \"5px\",\n                \"stroke\": \"red\"},\n                {\"fill\": \"transparent\",\n                \"shape\": \"circle\",\n                \"cx\": 0,\n                \"cy\": 0,\n                \"r\": 15,\n                \"height\": \"5px\",\n                \"width\": \"5px\",\n                \"stroke\": \"red\"}],\n            \"selected\": [\n                {\"fill\": \"transparent\",\n                \"shape\": \"circle\",\n                \"cx\": 0,\n                \"cy\": 0,\n                \"r\": 5,\n                \"height\": \"5px\",\n                \"width\": \"5px\",\n                \"stroke\": \"red\"}]\n            }\n        }]\n})\n\n//API.createData('currentChart', currentChart)\nAPI.createData('scores', score)\n\nconsole.log(score);"
+                "let a = [{a: 1, b: 2}, {a: 1, b: 2}];\nconsole.log(a)\nAPI.createData('selectedIDs', a);"
               ]
             }
           ],
@@ -582,12 +472,12 @@
       "layers": {
         "Default layer": {
           "position": {
-            "left": 89,
-            "top": 33
+            "left": 33,
+            "top": 82
           },
           "size": {
-            "width": 44,
-            "height": 41
+            "width": 41,
+            "height": 62
           },
           "zIndex": 0,
           "display": true,
@@ -603,7 +493,7 @@
           "name": "Default layer"
         }
       },
-      "id": 12,
+      "id": 3,
       "vars_in": [
         {}
       ],
@@ -660,61 +550,139 @@
       "title": ""
     },
     {
-      "url": "modules/types/client_interaction/code_executor/",
+      "url": "modules/types/edition/slick_grid/",
       "configuration": {
         "sections": {},
         "groups": {
           "group": [
             {
-              "display": [
+              "slickCheck": [
                 [
-                  "editor",
-                  "buttons"
+                  "enableCellNavigation",
+                  "rowNumbering",
+                  "forceFitColumns",
+                  "highlightScroll",
+                  "forgetLastActive"
                 ]
               ],
-              "execOnLoad": [
+              "copyPaste": [
                 []
               ],
-              "asyncAwait": [
+              "copyPasteOptions": [
                 [
-                  "top"
+                  "newRows"
                 ]
               ],
-              "script": [
-                "\nlet selectedScores = API.getData('selectedScores').resurrect();\nlet socket = API.cache('socket');\nsocket.send(JSON.stringify(selectedScores))\n\nconsole.log(selectedScores)\n\n"
+              "autoColumns": [
+                []
+              ],
+              "toolbar": [
+                []
+              ],
+              "colorjpath": [
+                []
+              ],
+              "slick.defaultColumnWidth": [
+                null
+              ],
+              "slick.rowHeight": [
+                null
+              ],
+              "slick.headerRowHeight": [
+                30
+              ],
+              "slick.selectionModel": [
+                "row"
+              ],
+              "idProperty": [
+                ""
+              ],
+              "filterType": [
+                "pref"
+              ],
+              "filterRow": [
+                "// Documentation: https://github.com/NPellet/visualizer/blob/46b40ca86345f8fa313563bf9c6ecb80ba323101/src/modules/types/edition/slick_grid/view.js#L1695-L1735"
+              ],
+              "customJpaths": [
+                ""
               ]
             }
           ],
-          "libs": [
+          "cols": [
+            [
+              {
+                "jpath": [],
+                "editor": "none",
+                "forceType": "",
+                "formatter": "typerenderer",
+                "copyFormatter": "default",
+                "visibility": "both",
+                "rendererOptions": "",
+                "editorOptions": "",
+                "hideColumn": []
+              }
+            ]
+          ],
+          "actionCols": [
+            [
+              {
+                "backgroundColor": [
+                  255,
+                  255,
+                  255,
+                  0
+                ],
+                "color": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "position": "end",
+                "clickMode": "text"
+              }
+            ]
+          ],
+          "groupings": [
+            [
+              {
+                "getter": []
+              }
+            ]
+          ],
+          "actionOutButtons": [
             [
               {}
             ]
           ],
-          "buttons": [
-            [
-              {
-                "name": "button1",
-                "label": "Execute",
-                "hide": [],
-                "disable": []
-              }
-            ]
+          "data": [
+            {
+              "saveInView": [
+                []
+              ],
+              "varname": [
+                ""
+              ],
+              "data": [
+                "[]"
+              ]
+            }
           ]
         }
       },
       "layers": {
         "Default layer": {
           "position": {
-            "left": 89,
-            "top": 75
+            "left": 80,
+            "top": 2
           },
           "size": {
-            "width": 44,
-            "height": 18
+            "width": 23,
+            "height": 60
           },
           "zIndex": 0,
           "display": true,
-          "title": "",
+          "title": "Selected IDs",
           "bgColor": [
             255,
             255,
@@ -726,11 +694,11 @@
           "name": "Default layer"
         }
       },
-      "id": 14,
+      "id": 5,
       "vars_in": [
         {
-          "rel": "inputValue",
-          "name": "selectedScores"
+          "rel": "list",
+          "name": "selectedIDs"
         }
       ],
       "actions_in": [
@@ -767,7 +735,8 @@
           {
             "toolbar": [
               [
-                "Open Preferences"
+                "Open Preferences",
+                "Export Data"
               ]
             ]
           }
@@ -783,130 +752,7 @@
           ]
         }
       ],
-      "title": ""
-    },
-    {
-      "url": "modules/types/client_interaction/code_executor/",
-      "configuration": {
-        "sections": {},
-        "groups": {
-          "group": [
-            {
-              "display": [
-                [
-                  "editor",
-                  "buttons"
-                ]
-              ],
-              "execOnLoad": [
-                []
-              ],
-              "asyncAwait": [
-                [
-                  "top"
-                ]
-              ],
-              "script": [
-                "require(['modules/modulefactory'], function (ModuleFactory) {\n    function getSpectraDisplayers() {\n        var modules = ModuleFactory.getModules();\n        let output = modules\n            .filter(x => DataObject.resurrect(x.definition.url)\n            .match(/spectra_displayer/g));\n        let result = []\n        for (let i = 0; i < output.length; i++) {\n            result.push({\n                'module': output[i],\n                'id': output[i].definition.id\n            })\n        }\n        return result\n    }\n    let data = getSpectraDisplayers();\n    console.log(data)\n})\n\n let module = API.getModule(6);\n module.view.xAxis.label.firstElementChild.innerHTML = \"test\";\n console.log()"
-              ]
-            }
-          ],
-          "libs": [
-            [
-              {}
-            ]
-          ],
-          "buttons": [
-            [
-              {
-                "name": "button1",
-                "label": "Execute",
-                "hide": [],
-                "disable": []
-              }
-            ]
-          ]
-        }
-      },
-      "layers": {
-        "Default layer": {
-          "position": {
-            "left": 87,
-            "top": 99
-          },
-          "size": {
-            "width": 52,
-            "height": 27
-          },
-          "zIndex": 0,
-          "display": true,
-          "title": "",
-          "bgColor": [
-            255,
-            255,
-            255,
-            0
-          ],
-          "wrapper": true,
-          "created": true,
-          "name": "Default layer"
-        }
-      },
-      "id": 15,
-      "vars_in": [
-        {}
-      ],
-      "actions_in": [
-        {}
-      ],
-      "vars_out": [
-        {
-          "jpath": []
-        }
-      ],
-      "actions_out": [
-        {
-          "jpath": []
-        }
-      ],
-      "toolbar": {
-        "custom": [
-          [
-            {
-              "title": "",
-              "icon": "",
-              "action": "",
-              "position": "begin",
-              "color": [
-                100,
-                100,
-                100,
-                1
-              ]
-            }
-          ]
-        ],
-        "common": [
-          {
-            "toolbar": [
-              [
-                "Open Preferences"
-              ]
-            ]
-          }
-        ]
-      },
-      "css": [
-        {
-          "fontSize": [
-            ""
-          ],
-          "fontFamily": [
-            ""
-          ]
-        }
-      ],
-      "title": ""
+      "title": "Selected IDs"
     }
   ],
   "variables": [
@@ -939,7 +785,7 @@
     {}
   ],
   "configuration": {
-    "title": "visualizeR"
+    "title": "hastaLaVista docker - score plot"
   },
   "actionscripts": [
     {
@@ -1038,4 +884,3 @@
     }
   ]
 }
-
